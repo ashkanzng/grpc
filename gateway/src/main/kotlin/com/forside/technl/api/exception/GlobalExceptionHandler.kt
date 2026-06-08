@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.client.RestClientException
 import org.springframework.web.server.ResponseStatusException
+import io.grpc.Status
+import io.grpc.StatusRuntimeException
 
 @RestControllerAdvice
 class GlobalExceptionHandler {
@@ -92,5 +94,32 @@ class GlobalExceptionHandler {
             .body(ErrorResponse(
                 message = message,
                 code = HttpStatus.BAD_REQUEST.toString()))
+    }
+
+    @ExceptionHandler(StatusRuntimeException::class)
+    fun handleGrpcException(ex: StatusRuntimeException): ResponseEntity<ErrorResponse> {
+        val httpStatus = when (ex.status.code) {
+            Status.Code.UNAVAILABLE -> HttpStatus.SERVICE_UNAVAILABLE
+            Status.Code.NOT_FOUND -> HttpStatus.NOT_FOUND
+            Status.Code.INVALID_ARGUMENT -> HttpStatus.BAD_REQUEST
+            Status.Code.DEADLINE_EXCEEDED -> HttpStatus.GATEWAY_TIMEOUT
+            else -> HttpStatus.INTERNAL_SERVER_ERROR
+        }
+
+        val message = when (ex.status.code) {
+            Status.Code.UNAVAILABLE -> "beverage service is unavailable"
+            Status.Code.NOT_FOUND -> "Requested resource was not found"
+            Status.Code.INVALID_ARGUMENT -> "Invalid request"
+            Status.Code.DEADLINE_EXCEEDED -> "service timeout"
+            else -> "gRPC service error"
+        }
+
+        return ResponseEntity.status(httpStatus)
+            .body(
+                ErrorResponse(
+                    message = message,
+                    code = httpStatus.toString()
+                )
+            )
     }
 }
