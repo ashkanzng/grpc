@@ -1,0 +1,54 @@
+version: '3'
+
+services:
+  application:
+    build:
+      context: gateway
+      dockerfile: Dockerfile
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - LOGGING_LEVEL_ROOT=INFO
+      - LOGGING_LEVEL_COM_AHOLD_TECHNL_SANDBOX=DEBUG
+      - LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_WEB=DEBUG
+      - JAVA_TOOL_OPTIONS="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
+    ports:
+      - "8080:8080"
+      - "9099:5005"
+    depends_on:
+      beverage-service:
+        condition: service_started
+  mysql:
+    image: mysql:8.4
+    container_name: sandbox-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: sandbox_db
+      MYSQL_USER: sandbox_user
+      MYSQL_PASSWORD: sandbox_password
+      MYSQL_ROOT_PASSWORD: root_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - sandbox_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot_password" ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  beverage-service:
+    build:
+      context: beverage-service
+      dockerfile: Dockerfile
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - LOGGING_LEVEL_ROOT=INFO
+      - LOGGING_LEVEL_COM_AHOLD_TECHNL_SANDBOX=DEBUG
+      - LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_WEB=DEBUG
+    ports:
+      - "9090:9090"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+volumes:
+  sandbox_mysql_data:

@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: backend-assignment
+  jackson:
+    default-property-inclusion: non_null
+grpc:
+  client:
+    order-service:
+      address: static://localhost:9090
+      negotiationType: plaintext

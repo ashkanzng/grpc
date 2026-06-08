@@ -1,0 +1,42 @@
+### Base URL
+@baseUrl = http://localhost:8080
+
+
+### Create Delivery
+GET {{baseUrl}}/api/v1/beers
+Content-Type: application/json
+
+
+
+### Create Invoices For Deliveries
+POST {{baseUrl}}/api/v1/orders
+Content-Type: application/json
+
+{
+  "items": [
+    {
+      "beerId": "11111111-1111-1111-1111-111111111111",
+      "quantity": "2"
+    },
+    {
+      "beerId": "44444444-4444-4444-4444-444444444444",
+      "quantity": "2"
+    }
+  ]
+}
+
+
+### Pay Order
+POST {{baseUrl}}/api/v1/orders/1eb26582-494d-47d5-9699-fe457863c55f/pay
+Content-Type: application/json
+
+{
+  "paymentMethod": "CARD",
+  "amount": 12.5
+}
+
+
+###
+GET {{baseUrl}}/api/v1/orders
+Content-Type: application/json
+

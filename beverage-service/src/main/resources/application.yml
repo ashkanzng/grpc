@@ -1,0 +1,31 @@
+spring:
+  application:
+    name: backend-assignment
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/sandbox_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&rewriteBatchedStatements=true
+    username: sandbox_user
+    password: sandbox_password
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
+    show-sql: false
+
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.xml
+
+grpc:
+  server:
+    port: 9090
+    reflection-service-enabled: true

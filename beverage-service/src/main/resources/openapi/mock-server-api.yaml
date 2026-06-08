@@ -1,0 +1,70 @@
+openapi: 3.0.3
+
+info:
+  title: Mock-Server API
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080
+    description: Local mock server
+
+paths:
+  /v1/invoices:
+    post:
+      tags:
+        - Invoice
+      summary: Send invoice To Customer
+      operationId: sendInvoiceToCustomer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateInvoiceRequest'
+            example:
+              deliveryId: "7167fc04-0625-49fc-98a9-8785a4a32b60"
+              address: "Example street 15A"
+      responses:
+        '200':
+          description: Invoice created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateInvoiceResponse'
+              example:
+                id: "e891827f-487f-4884-a8c3-77316212b81b"
+                sent: true
+        '400':
+          description: Invalid request
+        '500':
+          description: Internal server error
+
+components:
+  schemas:
+    CreateInvoiceRequest:
+      type: object
+      required:
+        - deliveryId
+        - address
+      properties:
+        deliveryId:
+          type: string
+          format: uuid
+          example: "7167fc04-0625-49fc-98a9-8785a4a32b60"
+        address:
+          type: string
+          example: "Example street 15A"
+
+    CreateInvoiceResponse:
+      type: object
+      required:
+        - id
+        - sent
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "e891827f-487f-4884-a8c3-77316212b81b"
+        sent:
+          type: boolean
+          example: true
