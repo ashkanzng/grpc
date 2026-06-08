@@ -1,0 +1,398 @@
+openapi: 3.0.3
+info:
+  title: Beer Order Payment API
+  version: 1.0.0
+  description: |
+    REST API exposed by the API Gateway for beer ordering and payment operations.
+    Gateway communicates with the Payment Order Service via gRPC.
+
+servers:
+  - url: /api/v1
+    description: API Gateway base path
+
+tags:
+  - name: Beer
+    description: Beer catalog endpoints
+  - name: Order
+    description: Beer order management endpoints
+  - name: Payment
+    description: Payment processing and history endpoints
+
+paths:
+  /beers:
+    get:
+      tags:
+        - Beer
+      operationId: getBeers
+      summary: Get list of beers
+      description: Returns available beers with price information.
+      responses:
+        "200":
+          description: Beer list retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BeerResponse"
+              examples:
+                beers:
+                  summary: Beer list example
+                  value:
+                    - id: 1
+                      name: "Heineken"
+                      price: 4.5
+                    - id: 2
+                      name: "Corona"
+                      price: 4.0
+                    - id: 3
+                      name: "Budweiser"
+                      price: 3.5
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /orders:
+    post:
+      tags:
+        - Order
+      operationId: createOrder
+      summary: Create a new beer order
+      description: Creates an order containing one or more beer items.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrderRequest"
+            examples:
+              createOrder:
+                summary: Create order request
+                value:
+                  items:
+                    - beerId: 1
+                      quantity: 2
+                    - beerId: 3
+                      quantity: 1
+      responses:
+        "201":
+          description: Order created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderResponse"
+              examples:
+                createdOrder:
+                  summary: Created order response
+                  value:
+                    orderId: "2f8f7f8e-6a43-4f85-9a8c-0c95ef4d8a44"
+                    status: "CREATED"
+                    totalAmount: 12.5
+                    items:
+                      - beerId: 1
+                        beerName: "Heineken"
+                        quantity: 2
+                        unitPrice: 4.5
+                        lineTotal: 9.0
+                      - beerId: 3
+                        beerName: "Budweiser"
+                        quantity: 1
+                        unitPrice: 3.5
+                        lineTotal: 3.5
+                    createdAt: "2024-05-21T12:00:00Z"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    get:
+      tags:
+        - Order
+      operationId: getOrders
+      summary: Get all orders
+      responses:
+        "200":
+          description: Orders retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OrderResponse"
+
+  /orders/{orderId}/pay:
+    post:
+      tags:
+        - Payment
+      operationId: payOrder
+      summary: Pay for an order
+      description: Processes payment for an existing order.
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          description: Unique order identifier
+          schema:
+            type: string
+            format: uuid
+          example: "2f8f7f8e-6a43-4f85-9a8c-0c95ef4d8a44"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PayOrderRequest"
+            examples:
+              payOrder:
+                summary: Pay order request
+                value:
+                  paymentMethod: "CARD"
+                  amount: 12.5
+      responses:
+        "200":
+          description: Payment processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentResponse"
+              examples:
+                paid:
+                  summary: Payment response
+                  value:
+                    paymentId: "8db59b41-9773-4656-a5c4-e4f6f18f7a88"
+                    orderId: "2f8f7f8e-6a43-4f85-9a8c-0c95ef4d8a44"
+                    amount: 12.5
+                    paymentMethod: "CARD"
+                    status: "PAID"
+                    paidAt: "2024-05-21T12:15:00Z"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+
+components:
+  schemas:
+    BeerResponse:
+      type: object
+      required:
+        - id
+        - name
+        - price
+      properties:
+        id:
+          type: string
+          example: "2f8f7f8e-6a43-4f85-9a8c-0c95ef4d8a44"
+        name:
+          type: string
+          example: "Heineken"
+        price:
+          type: number
+          format: double
+          minimum: 0
+          example: 4.5
+
+    CreateOrderRequest:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/CreateOrderItemRequest"
+
+    CreateOrderItemRequest:
+      type: object
+      required:
+        - beerId
+        - quantity
+      properties:
+        beerId:
+          type: string
+          example: "2f8f7f8e-6a43-4f85-9a8c-0c95ef4d8a44"
+        quantity:
+          type: integer
+          format: int32
+          minimum: 1
+          example: 2
+
+    OrderResponse:
+      type: object
+      required:
+        - orderId
+        - status
+        - totalAmount
+      properties:
+        orderId:
+          type: string
+          format: uuid
+          example: "2f8f7f8e-6a43-4f85-9a8c-0c95ef4d8a44"
+        status:
+          $ref: "#/components/schemas/OrderStatus"
+        totalAmount:
+          type: number
+          format: double
+          minimum: 0
+          example: 12.5
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItemResponse"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-05-21T12:00:00Z"
+
+    OrderItemResponse:
+      type: object
+      required:
+        - beerId
+        - beerName
+        - quantity
+        - unitPrice
+        - lineTotal
+      properties:
+        beerId:
+          type: string
+          example: "2f8f7f8e-6a43-4f85-9a8c-0c95ef4d8a44"
+        beerName:
+          type: string
+          example: "Heineken"
+        quantity:
+          type: integer
+          format: int32
+          example: 2
+        unitPrice:
+          type: number
+          format: double
+          example: 4.5
+        totalPrice:
+          type: number
+          format: double
+          example: 9.0
+
+    PayOrderRequest:
+      type: object
+      required:
+        - paymentMethod
+        - amount
+      properties:
+        paymentMethod:
+          $ref: "#/components/schemas/PaymentMethod"
+        amount:
+          type: number
+          format: double
+          minimum: 0
+          example: 12.5
+
+    PaymentResponse:
+      type: object
+      required:
+        - orderId
+        - status
+      properties:
+        orderId:
+          type: string
+          format: uuid
+          example: "2f8f7f8e-6a43-4f85-9a8c-0c95ef4d8a44"
+        status:
+          $ref: "#/components/schemas/PaymentStatus"
+
+    PaymentHistoryResponse:
+      type: object
+      required:
+        - paymentId
+        - orderId
+        - amount
+        - paymentMethod
+        - status
+        - paidAt
+      properties:
+        paymentId:
+          type: string
+          format: uuid
+          example: "8db59b41-9773-4656-a5c4-e4f6f18f7a88"
+        orderId:
+          type: string
+          format: uuid
+          example: "2f8f7f8e-6a43-4f85-9a8c-0c95ef4d8a44"
+        amount:
+          type: number
+          format: double
+          example: 12.5
+        paymentMethod:
+          $ref: "#/components/schemas/PaymentMethod"
+        status:
+          $ref: "#/components/schemas/PaymentStatus"
+        paidAt:
+          type: string
+          format: date-time
+          example: "2024-05-21T12:15:00Z"
+
+    OrderStatus:
+      type: string
+      enum:
+        - CREATED
+        - PAID
+        - CANCELLED
+      example: "CREATED"
+
+    PaymentStatus:
+      type: string
+      enum:
+        - PAID
+        - FAILED
+      example: "PAID"
+
+    PaymentMethod:
+      type: string
+      enum:
+        - CARD
+        - CASH
+        - IDEAL
+      example: "CARD"
+
+    ErrorResponse:
+      type: object
+      required:
+        - message
+        - code
+      properties:
+        message:
+          type: string
+          example: "Invalid request body"
+        code:
+          type: string
+          example: "BAD_REQUEST"
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Conflict:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
