@@ -5,7 +5,6 @@ WORKDIR /app
 
 COPY pom.xml .
 COPY src ./src
-COPY openapi-templates ./openapi-templates
 
 RUN mvn clean package -DskipTests
 
