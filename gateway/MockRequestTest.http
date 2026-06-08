@@ -21,13 +21,17 @@ Content-Type: application/json
     {
       "beerId": "44444444-4444-4444-4444-444444444444",
       "quantity": "2"
+    },
+    {
+      "beerId": "22222222-2222-2222-2222-222222222222",
+      "quantity": "12"
     }
   ]
 }
 
 
 ### Pay Order
-POST {{baseUrl}}/api/v1/orders/1eb26582-494d-47d5-9699-fe457863c55f/pay
+POST {{baseUrl}}/api/v1/orders/84f15c63-17dc-4920-8f54-b941940259fb/pay
 Content-Type: application/json
 
 {
