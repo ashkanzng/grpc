@@ -1,0 +1,259 @@
+openapi: 3.0.3
+info:
+  title: Delivery API
+  version: 1.0.0
+
+paths:
+  /deliveries:
+    post:
+      tags:
+        - Delivery
+      operationId: createDelivery
+      summary: Create a delivery
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDeliveryRequest"
+            examples:
+              createDelivery:
+                summary: Create delivery request
+                value:
+                  vehicleId: "AHV-589"
+                  address: "Example street 15A"
+                  startedAt: "2023-10-09T12:45:34.678Z"
+                  status: "IN_PROGRESS"
+      responses:
+        "201":
+          description: Delivery created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryResponse"
+              examples:
+                createdDelivery:
+                  summary: Created delivery response
+                  value:
+                    id: "69201507-0ae4-4c56-ac2d-75fbe27efad8"
+                    vehicleId: "AHV-589"
+                    address: "Example street 15A"
+                    startedAt: "2023-10-09T12:45:34.678Z"
+                    finishedAt: null
+                    status: "IN_PROGRESS"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /deliveries/invoice:
+    post:
+      tags:
+        - Delivery
+      operationId: createInvoices
+      summary: Create invoices for deliveries
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateInvoiceRequest"
+            examples:
+              createInvoice:
+                summary: Create invoice request
+                value:
+                  deliveryIds:
+                    - "7167fc04-0625-49fc-98a9-8785a4a32b60"
+      responses:
+        "200":
+          description: Invoices created
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InvoiceResponse"
+              examples:
+                invoicesCreated:
+                  summary: Invoice response
+                  value:
+                    - deliveryId: "7167fc04-0625-49fc-98a9-8785a4a32b60"
+                      invoiceId: "e891827f-487f-4884-a8c3-77316212b81b"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Deliveries not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /deliveries/business-summary:
+    get:
+      tags:
+        - Delivery
+      operationId: getBusinessSummary
+      summary: Get delivery business summary
+      responses:
+        "200":
+          description: Business summary retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BusinessSummaryResponse"
+              examples:
+                businessSummary:
+                  summary: Business summary response
+                  value:
+                    totalDeliveries: 120
+                    inProgressDeliveries: 25
+                    finishedDeliveries: 90
+                    cancelledDeliveries: 5
+                    totalInvoices: 80
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    CreateDeliveryRequest:
+      type: object
+      required:
+        - vehicleId
+        - address
+        - startedAt
+        - status
+      properties:
+        vehicleId:
+          type: string
+          example: "AHV-589"
+        address:
+          type: string
+          example: "Example street 15A"
+        startedAt:
+          type: string
+          format: date-time
+          example: "2023-10-09T12:45:34.678Z"
+        status:
+          $ref: "#/components/schemas/DeliveryStatus"
+
+    DeliveryResponse:
+      type: object
+      required:
+        - id
+        - vehicleId
+        - address
+        - startedAt
+        - status
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "69201507-0ae4-4c56-ac2d-75fbe27efad8"
+        vehicleId:
+          type: string
+          example: "AHV-589"
+        address:
+          type: string
+          example: "Example street 15A"
+        startedAt:
+          type: string
+          format: date-time
+          example: "2023-10-09T12:45:34.678Z"
+        finishedAt:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
+        status:
+          $ref: "#/components/schemas/DeliveryStatus"
+
+    CreateInvoiceRequest:
+      type: object
+      required:
+        - deliveryIds
+      properties:
+        deliveryIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          example:
+            - "7167fc04-0625-49fc-98a9-8785a4a32b60"
+
+    InvoiceResponse:
+      type: object
+      required:
+        - deliveryId
+        - invoiceId
+      properties:
+        deliveryId:
+          type: string
+          format: uuid
+          example: "7167fc04-0625-49fc-98a9-8785a4a32b60"
+        invoiceId:
+          type: string
+          format: uuid
+          example: "e891827f-487f-4884-a8c3-77316212b81b"
+
+    DeliveryStatus:
+      type: string
+      enum:
+        - IN_PROGRESS
+        - DELIVERED
+      example: "IN_PROGRESS"
+
+    ErrorResponse:
+      type: object
+      required:
+        - message
+        - code
+      properties:
+        message:
+          type: string
+          example: "Invalid request body"
+        code:
+          type: string
+          example: "BAD_REQUEST"
+
+    BusinessSummaryResponse:
+      type: object
+      required:
+        - deliveries
+        - averageMinutesBetweenDeliveryStart
+      properties:
+        deliveries:
+          type: integer
+          format: int32
+          example: 120
+        averageMinutesBetweenDeliveryStart:
+          type: integer
+          format: int32
+          example: 25
